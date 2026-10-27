@@ -1,5 +1,6 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { engineSrc, label, sourcesIn } from "../../../test/sources.ts";
 
 /**
  * Law 3, as a test: what a pasted plain text *becomes* is the engine's to decide
@@ -18,46 +19,14 @@ import { describe, expect, it } from "vitest";
  * because the behaviour it forbids is the behaviour everything else already checks.
  */
 
-/**
- * Every `.ts`/`.svelte` under a root, so a new file is covered without a list.
- *
+/*
  * The engine's TypeScript host (`engine/src`) is scanned as well as the front, and for
  * the same reason: it is the other place a paste is read before it reaches the engine, and
  * a `split("\n")` or a wrap constant written there is exactly as much a second answer as
  * one written in a `.svelte` file. Nothing in either tree trips the patterns today, so the
  * scan costs nothing until someone breaks law 3.
  */
-function sourcesIn(dir: URL): URL[] {
-  // `new URL(".", …)` on a URL with no trailing slash resolves to its *parent*, so a
-  // directory has to be spelled as one before the walk starts — otherwise the walk climbs
-  // out of the tree and never comes back.
-  const root = new URL(`${dir.pathname.replace(/\/?$/, "/")}`, dir);
-  const out: URL[] = [];
-  for (const entry of readdirSync(root)) {
-    const path = new URL(entry, root);
-    if (statSync(path).isDirectory()) {
-      out.push(...sourcesIn(path));
-    } else if (/\.(ts|svelte)$/.test(entry) && !/\.test\.ts$/.test(entry)) {
-      out.push(path);
-    }
-  }
-  return out;
-}
-
-/** The engine's own sources, which the front is not allowed to have copied. */
-const engineSrc = (path: string) => new URL(`../../../../../engine/${path}`, import.meta.url);
-
 const SOURCES = [...sourcesIn(new URL(".", import.meta.url)), ...sourcesIn(engineSrc("src/"))];
-
-/** The path from `apps/web/` or `engine/`, whichever the file is under, for a failure. */
-const label = (path: URL) => {
-  const pathname = decodeURIComponent(path.pathname);
-  for (const root of ["/apps/web/", "/engine/"]) {
-    const at = pathname.indexOf(root);
-    if (at >= 0) return pathname.slice(at + 1);
-  }
-  return pathname;
-};
 
 const read = (path: URL) => readFileSync(path, "utf8");
 
