@@ -263,6 +263,19 @@ build-public: $(ENGINE_PKG) ## Build the browser-only public site into apps/web/
 	$(TOOLING) sh -c 'VITE_HYDRAWN_MODE=browser VITE_HYDRAWN_RELAY_URL=$(RELAY_URL) VITE_BUILD_APP_SHA=$(BUILD_APP_SHA) VITE_BUILD_ENGINE_SHA=$(BUILD_ENGINE_SHA) pnpm --filter @drawnosaurus/web build'
 	VITE_HYDRAWN_RELAY_URL=$(RELAY_URL) sh scripts/check-public-build.sh apps/web/build
 
+# The osionos build's two addresses. Defaults are placeholders for the check only: a
+# deployment passes its own (groot builds this image with the real ones).
+OSIONOS_PARENT_ORIGIN ?= https://osionos.example
+OSIONOS_API_URL ?= https://bridge.example/api/whiteboard
+OSIONOS_IMAGE ?= hydrawn-osionos:local
+
+osionos-image: $(ENGINE_PKG) ## Build the image osionos frames and check its headers
+	docker build -f docker/osionos.Dockerfile -t $(OSIONOS_IMAGE) \
+		--build-arg HYDRAWN_PARENT_ORIGIN=$(OSIONOS_PARENT_ORIGIN) \
+		--build-arg HYDRAWN_API_URL=$(OSIONOS_API_URL) \
+		--build-arg BUILD_APP_SHA=$(BUILD_APP_SHA) --build-arg BUILD_ENGINE_SHA=$(BUILD_ENGINE_SHA) .
+	sh scripts/check-osionos-image.sh $(OSIONOS_IMAGE) $(OSIONOS_PARENT_ORIGIN) $(OSIONOS_API_URL)
+
 up: $(ENGINE_PKG) ## Start the stack mongo + api + web behind the gateway on WEB_PORT + realtime
 	$(DC) up -d --build mongo realtime api web
 	@# Recreated every time, because it is cheap and a kept one can be stale: its
@@ -386,7 +399,7 @@ clean: ## Remove containers, volumes, images, and build output
 	rm -rf engine/pkg apps/web/build apps/web/.svelte-kit
 	@echo -e "$(GREEN)✔ clean$(RESET)"
 
-.PHONY: all help submodules wasm install lock typecheck lint format test build-public \
+.PHONY: all help submodules wasm install lock typecheck lint format test build-public osionos-image \
 	test-integration test-e2e test-e2e-public fuzz-mermaid reclaim-host-files conformance parity parity-deps quality verify \
 	dev dev-public build up down logs shell clean \
 	oracle oracle-fixtures bench inspector-smoke stale
