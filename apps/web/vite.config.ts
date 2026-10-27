@@ -33,13 +33,37 @@ const usePolling = process.env.VITE_USE_POLLING === "1";
 
 /**
  * "server" is the Docker build (adapter-node, the API behind the gateway); "browser" is
- * the public build (adapter-static, boards in IndexedDB). It is build input, so a typo
- * must stop the build rather than quietly produce the other one.
+ * the public build (adapter-static, boards in IndexedDB); "osionos" is the build osionos
+ * frames (adapter-static, boards behind the osionos bridge). It is build input, so a typo
+ * must stop the build rather than quietly produce another one.
  */
 const mode = process.env.VITE_HYDRAWN_MODE ?? "server";
-if (mode !== "server" && mode !== "browser") {
-  throw new Error(`VITE_HYDRAWN_MODE must be "server" or "browser", got "${mode}"`);
+if (mode !== "server" && mode !== "browser" && mode !== "osionos") {
+  throw new Error(`VITE_HYDRAWN_MODE must be "server", "browser" or "osionos", got "${mode}"`);
 }
+
+/**
+ * The osionos build is framed by one page and talks to one bridge, both fixed when it is
+ * built: the token handshake trusts exactly that parent origin (`host/token.ts`), so an
+ * unset one would trust none and every board would fail to open. Missing stops the build.
+ */
+const hostOrigins = (): Record<string, string> => {
+  if (mode !== "osionos") return {};
+  const required = ["VITE_HYDRAWN_PARENT_ORIGIN", "VITE_HYDRAWN_API_URL"] as const;
+  const values: Record<string, string> = {};
+  for (const name of required) {
+    const value = process.env[name] ?? "";
+    if (!/^https?:\/\/[^/]+(\/[^?#]*)?$/.test(value)) {
+      throw new Error(
+        `${name} must be an absolute http(s) URL for the osionos build, got "${value}"`,
+      );
+    }
+    // The parent is compared with `MessageEvent.origin`, which never carries a path.
+    const folded = name === "VITE_HYDRAWN_PARENT_ORIGIN" ? new URL(value).origin : value;
+    values[`import.meta.env.${name}`] = JSON.stringify(folded.replace(/\/$/, ""));
+  }
+  return values;
+};
 
 /**
  * The store's own handlers, over its in-memory database, at the `/store` the Pages
@@ -65,7 +89,7 @@ function storeDev(): Plugin {
 export default defineConfig({
   // Folded in, so `BROWSER_MODE` (lib/mode.ts) is a constant and the minifier drops the
   // branch that does not apply.
-  define: { "import.meta.env.VITE_HYDRAWN_MODE": JSON.stringify(mode) },
+  define: { "import.meta.env.VITE_HYDRAWN_MODE": JSON.stringify(mode), ...hostOrigins() },
   plugins: [sveltekit(), storeDev()],
   server: {
     fs: { allow: [engineSrc, enginePkg] },

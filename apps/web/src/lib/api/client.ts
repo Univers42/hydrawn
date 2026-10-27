@@ -5,7 +5,7 @@ import type {
   OsidrawFile,
   ShareInfo,
 } from "@drawnosaurus/contract";
-import { apiBase } from "../config.ts";
+import { apiBase, apiTokens } from "../config.ts";
 import type { ScenePatch, StampedElement } from "../autosave/sceneDiff.ts";
 
 /**
@@ -34,12 +34,39 @@ export class ApiClientError extends Error {
 export const isConflict = (error: unknown): boolean =>
   error instanceof ApiClientError && error.status === 409;
 
+/**
+ * The fetch every call makes. In the osionos build it carries the whiteboard token, and a
+ * 401 — the token expired or the bridge restarted — is retried once with a fresh one; a
+ * second 401 is the caller's to report.
+ */
+async function send(path: string, init: RequestInit): Promise<Response> {
+  const tokens = apiTokens();
+  const attempt = async (): Promise<Response> => {
+    let authorization: Record<string, string> = {};
+    if (tokens) {
+      try {
+        authorization = { authorization: `Bearer ${await tokens.current()}` };
+      } catch (error) {
+        throw new ApiClientError(401, "unauthorized", (error as Error).message);
+      }
+    }
+    return fetch(`${baseUrl()}${path}`, {
+      ...init,
+      headers: { ...(init.headers as Record<string, string> | undefined), ...authorization },
+    });
+  };
+  const response = await attempt();
+  if (response.status !== 401 || !tokens) return response;
+  tokens.drop();
+  return attempt();
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${baseUrl()}${path}`, {
+  const response = await send(path, {
     ...init,
     headers: {
       ...(init.body === undefined ? {} : { "content-type": "application/json" }),
-      ...init.headers,
+      ...(init.headers as Record<string, string> | undefined),
     },
   });
 
@@ -75,7 +102,7 @@ export const listBoards = (limit?: number, cursor?: string): Promise<BoardList> 
  * and that helper sends JSON and parses a JSON reply.
  */
 export async function putThumbnail(slug: string, blob: Blob): Promise<void> {
-  const response = await fetch(`${baseUrl()}/v1/boards/${slug}/thumbnail`, {
+  const response = await send(`/v1/boards/${slug}/thumbnail`, {
     method: "PUT",
     headers: { "content-type": "image/png" },
     body: blob,
@@ -92,6 +119,15 @@ export async function putThumbnail(slug: string, blob: Blob): Promise<void> {
 /** Where the gallery loads a board's picture; `version` (its `thumbnailAt`) busts the cache. */
 export const thumbnailUrl = (slug: string, version: string): string =>
   `${baseUrl()}/v1/boards/${slug}/thumbnail?v=${encodeURIComponent(version)}`;
+
+/**
+ * The board's picture as bytes, for the osionos build: an `<img>` cannot send its token, so
+ * the picture is fetched here and shown from an object URL. Null when there is none.
+ */
+export async function thumbnailBlob(slug: string, version: string): Promise<Blob | null> {
+  const response = await send(`/v1/boards/${slug}/thumbnail?v=${encodeURIComponent(version)}`, {});
+  return response.ok ? response.blob() : null;
+}
 
 /** Where other people can reach this Hydrawn, for the Share dialog. */
 export const getShareInfo = (): Promise<ShareInfo> => request<ShareInfo>("/v1/share");

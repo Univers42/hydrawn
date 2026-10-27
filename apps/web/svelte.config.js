@@ -2,8 +2,9 @@ import adapterNode from "@sveltejs/adapter-node";
 import adapterStatic from "@sveltejs/adapter-static";
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 
-// Same test as lib/mode.ts; svelte.config.js cannot import it. vite.config.ts validates the value.
-const browser = process.env.VITE_HYDRAWN_MODE === "browser";
+// Same tests as lib/mode.ts; svelte.config.js cannot import it. vite.config.ts validates the
+// value. The osionos build is static too: its server is the osionos bridge.
+const isStatic = ["browser", "osionos"].includes(process.env.VITE_HYDRAWN_MODE ?? "");
 
 /** @type {import('@sveltejs/kit').Config} */
 export default {
@@ -13,7 +14,7 @@ export default {
     runes: true,
   },
   kit: {
-    adapter: browser
+    adapter: isStatic
       ? adapterStatic({ pages: "build", assets: "build", fallback: "index.html" })
       : adapterNode({ out: "build" }),
     // Declared ONCE here: SvelteKit feeds this to both Vite's resolver and the

@@ -169,6 +169,7 @@
     onReady,
     fetchLatest,
     browser = false,
+    collaboration = true,
     roomSecret = null,
     onShareLive,
     onPeerJoined,
@@ -185,6 +186,11 @@
      * public build's own (`DrawModals`).
      */
     browser?: boolean;
+    /**
+     * Whether the drawing can go live and be shared at all. The osionos build cannot: it
+     * has no relay and no Share dialog, so neither the socket nor the button exists there.
+     */
+    collaboration?: boolean;
     /**
      * The public build's: the drawing's secret, when it is shared. A new one starts the
      * live link, so sharing a drawing brings it online without a reload.
@@ -503,7 +509,9 @@
   let unsubPatch: (() => void) | undefined;
   let unsubJoin: (() => void) | undefined;
   let unsubStored: (() => void) | undefined;
-  const liveText = $derived(slug && !unshared ? liveLabel(liveStatus, liveHistory) : null);
+  const liveText = $derived(
+    slug && collaboration && !unshared ? liveLabel(liveStatus, liveHistory) : null,
+  );
   const liveBroadcast = new LiveSceneBroadcaster<StampedElement>();
   /** What peers hold and are doing, as the live link last said — see `syncPeers`. */
   let peerStates: Peer<StampedElement>[] = [];
@@ -1876,7 +1884,7 @@
       //
       // The public build does not come here: its live link starts when the drawing's
       // secret arrives, so sharing a drawing brings it online without a reload.
-      if (!browser) {
+      if (!browser && collaboration) {
         void (async () => {
           const raw = await liveKeyFor({
             browser,
@@ -2362,7 +2370,7 @@
       live={liveText}
       {shared}
       onToggleMenu={() => (showMainMenu = !showMainMenu)}
-      onOpenShare={openShare}
+      onOpenShare={collaboration ? openShare : undefined}
       onOpenShortcuts={() => (showShortcuts = true)}
       {toolbarWidth}
       phone={formFactor === "phone"}
@@ -2389,7 +2397,7 @@
             onOpenExport={() => (showExport = true)}
             onOpenMermaid={() => (showMermaid = true)}
             onOpenTemplates={() => (showTemplates = true)}
-            onOpenShare={openShare}
+            onOpenShare={collaboration ? openShare : undefined}
             onOpenShortcuts={() => (showShortcuts = true)}
             onOpenPresent={() => void enterPresent()}
             onOpenPath={openPath}

@@ -10,7 +10,7 @@
   import { holdForSave } from "$lib/boards/holdForSave.ts";
   import { rememberLastDrawing } from "$lib/boards/lastDrawing.ts";
   import { openBoard } from "$lib/boards/openBoard.ts";
-  import { BROWSER_MODE } from "$lib/mode.ts";
+  import { BROWSER_MODE, HOST_MODE } from "$lib/mode.ts";
   import { boards, secrets } from "$lib/store/index.ts";
   import {
     SceneAutosaver,
@@ -435,6 +435,7 @@
         {onReady}
         {fetchLatest}
         browser={BROWSER_MODE}
+        collaboration={!HOST_MODE}
         {roomSecret}
         onShareLive={shareLive}
         {onPeerJoined}
