@@ -33,6 +33,9 @@ export interface OpenBoardOptions {
   stored?: StoredCopyReader | null;
   now: () => number;
   nonce: () => number;
+  /** The osionos build's: the title osionos framed the board with, shown while the server
+   *  has no board to name it (osionos opens a new board before its first save creates it). */
+  newTitle?: string;
 }
 
 /** What the online copy holds, read back: the drawing, as it was stored. */
@@ -133,6 +136,7 @@ async function fromServer({
   storage,
   now,
   nonce,
+  newTitle,
 }: OpenBoardOptions): Promise<Read> {
   // Read beside the board rather than after it, so it costs the page no time.
   const draft = (drafts?.load(slug) ?? Promise.resolve(null)) as Promise<DrawElement[] | null>;
@@ -161,7 +165,7 @@ async function fromServer({
     const legacy = storage?.getItem(`${LEGACY_DRAFT_PREFIX}${slug}`);
     const loaded = drafted ?? (legacy ? (elementsFromJson(legacy) ?? []) : []);
     return {
-      title: slug ? `Board ${slug}` : "Untitled",
+      title: newTitle ?? (slug ? `Board ${slug}` : "Untitled"),
       loaded,
       elements: loaded,
       resave: [],
