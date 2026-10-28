@@ -23,7 +23,11 @@
       .create(newBoardTitle(page.url.searchParams))
       .then((board) => {
         if (window.parent !== window) {
-          announceBoard(window.parent, import.meta.env.VITE_HYDRAWN_PARENT_ORIGIN ?? "", board.slug);
+          announceBoard(
+            window.parent,
+            import.meta.env.VITE_HYDRAWN_PARENT_ORIGIN ?? "",
+            board.slug,
+          );
           return;
         }
         return goto(resolve("/boards/[slug]", { slug: board.slug }), { replaceState: true });
