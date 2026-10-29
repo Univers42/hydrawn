@@ -140,8 +140,10 @@ export const startTunnel = (): Promise<ShareInfo> =>
 export const stopTunnel = (): Promise<ShareInfo> =>
   request<ShareInfo>("/v1/share/tunnel", { method: "DELETE" });
 
-export const createBoard = (title: string): Promise<BoardSummary> =>
-  request<BoardSummary>("/v1/boards", { method: "POST", body: JSON.stringify({ title }) });
+/** `slug`: the osionos build's, for a board osionos named before it existed (the bridge
+ *  creates it once, then answers with it). The API mints its own and takes none. */
+export const createBoard = (title: string, slug?: string): Promise<BoardSummary> =>
+  request<BoardSummary>("/v1/boards", { method: "POST", body: JSON.stringify({ title, slug }) });
 
 /** `tombstones` includes deleted elements, for catching up after a lost connection. */
 export const getBoard = (slug: string, options: { tombstones?: boolean } = {}): Promise<Board> =>

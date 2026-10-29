@@ -7,6 +7,7 @@ import {
 import * as api from "../api/client.ts";
 import { ApiClientError, type PatchAck } from "../api/client.ts";
 import { fillPictures } from "../autosave/pictures.ts";
+import { newBoardTitle } from "../host/created.ts";
 import type { ScenePatch, StampedElement } from "../autosave/sceneDiff.ts";
 import type { BoardStore } from "./types.ts";
 
@@ -20,6 +21,29 @@ const MERGE_ATTEMPTS = 3;
 export interface HostApi {
   getBoard: typeof api.getBoard;
   replaceBoard: typeof api.replaceBoard;
+  createBoard: typeof api.createBoard;
+}
+
+/**
+ * The stored board, with its tombstones. osionos frames a new inline board by a slug it
+ * minted, before the board exists; the first save creates it here, titled `newTitle()`.
+ */
+async function readOrCreate(client: HostApi, slug: string, newTitle: () => string): Promise<Board> {
+  try {
+    return await client.getBoard(slug, { tombstones: true });
+  } catch (error) {
+    if (!(error instanceof ApiClientError && error.status === 404)) throw error;
+  }
+  const created = await client.createBoard(newTitle(), slug);
+  // A bridge older than client slugs mints its own and leaves this one missing.
+  if (created.slug !== slug) {
+    throw new ApiClientError(
+      502,
+      "slug_ignored",
+      "The whiteboard service could not create this board.",
+    );
+  }
+  return client.getBoard(slug, { tombstones: true });
 }
 
 /**
@@ -36,11 +60,12 @@ export async function mergeAndReplace<T extends StampedElement>(
   client: HostApi,
   slug: string,
   patch: ScenePatch<T>,
+  newTitle: () => string,
 ): Promise<PatchAck> {
   // Typed as the contract's: the bridge stores what the engine produced.
   const incoming = patch.elements as unknown as DrawElementDto[];
   for (let attempt = 1; ; attempt += 1) {
-    const stored: Board = await client.getBoard(slug, { tombstones: true });
+    const stored = await readOrCreate(client, slug, newTitle);
     const before = new Map(stored.scene.elements.map((element) => [element.id, element]));
     const merged = reconcileElements(stored.scene.elements, incoming);
     const kept = fillPictures(merged.elements, (id) => before.get(id));
@@ -69,7 +94,8 @@ export const hostStore: BoardStore = {
   list: api.listBoards,
   create: api.createBoard,
   get: api.getBoard,
-  patchElements: (slug, patch) => mergeAndReplace(api, slug, patch),
+  patchElements: (slug, patch) =>
+    mergeAndReplace(api, slug, patch, () => newBoardTitle(new URLSearchParams(location.search))),
   replace: api.replaceBoard,
   remove: api.deleteBoard,
   putThumbnail: api.putThumbnail,
