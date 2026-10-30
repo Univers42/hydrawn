@@ -8,6 +8,7 @@
   import type { DrawEngine } from "@osionos/draw-engine/engine";
   import { ApiClientError } from "$lib/api/client.ts";
   import { holdForSave } from "$lib/boards/holdForSave.ts";
+  import { newBoardTitle } from "$lib/host/created.ts";
   import { rememberLastDrawing } from "$lib/boards/lastDrawing.ts";
   import { openBoard } from "$lib/boards/openBoard.ts";
   import { BROWSER_MODE, HOST_MODE } from "$lib/mode.ts";
@@ -228,6 +229,7 @@
           stored: copy,
           now: () => Date.now(),
           nonce: () => Math.floor(Math.random() * 0x7fffffff),
+          newTitle: HOST_MODE ? newBoardTitle(page.url.searchParams) : undefined,
         }),
         // The engine's loader keeps a rejection, so the engine is not tried again in
         // this page: the failure is the page's to report, not the loader's to retry.

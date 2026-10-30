@@ -1,9 +1,10 @@
 import { MAX_TITLE_LENGTH } from "@drawnosaurus/contract";
 
 /**
- * The osionos build's `/new`: osionos frames it for an inline `/whiteboard [title]` block,
- * this frame creates the board (the bridge answers this origin only, never osionos'), and
- * tells the framing page which board the block now holds.
+ * The osionos build's `/new`: osionos builds older than client-minted slugs frame it for an
+ * inline `/whiteboard [title]` block; this frame creates the board (the bridge answers this
+ * origin only, never osionos') and tells the framing page which board the block now holds.
+ * Newer builds frame `/boards/<slug>?title=` and the first save creates the board.
  */
 
 export const BOARD_CREATED = "hydrawn:board-created";

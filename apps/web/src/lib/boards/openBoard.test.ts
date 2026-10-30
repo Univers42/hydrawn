@@ -71,8 +71,10 @@ function setup({
   draft = Promise.resolve(null),
   legacy,
   stored,
+  newTitle,
 }: {
   browser?: boolean;
+  newTitle?: string;
   get: () => Promise<Board>;
   draft?: Promise<DrawElement[] | null>;
   legacy?: readonly DrawElement[];
@@ -87,7 +89,17 @@ function setup({
   const drafts = { load: vi.fn(() => draft), record: vi.fn() };
   const store = { get: vi.fn(get) };
   const open = () =>
-    openBoard({ slug: SLUG, browser, store, drafts, storage, stored, now: () => NOW, nonce });
+    openBoard({
+      slug: SLUG,
+      browser,
+      store,
+      drafts,
+      storage,
+      stored,
+      now: () => NOW,
+      nonce,
+      newTitle,
+    });
   return { open, storage, drafts, store };
 }
 
@@ -188,6 +200,14 @@ describe("openBoard on the server path", () => {
     expect(opened.title).toBe(`Board ${SLUG}`);
     // Kept: it is the only copy there is.
     expect(storage.getItem(LEGACY_KEY)).not.toBeNull();
+  });
+
+  it("names a board the server does not have yet by the title osionos framed it with", async () => {
+    const notYet = () => Promise.reject(new ApiClientError(404, "not_found", "no such board"));
+    const opened = await setup({ get: notYet, newTitle: "Sprint plan" }).open();
+
+    expect(opened.title).toBe("Sprint plan");
+    expect(opened.elements).toEqual([]);
   });
 
   it("removes the localStorage copy once the server has answered", async () => {
