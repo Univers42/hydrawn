@@ -5,7 +5,8 @@
   "type": "module",
   "description": "The wire contract: osidraw element schemas, board DTOs, and the last-write-wins reconcile primitive. Shared by web and api so the merge rule exists once.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./schema-jit": "./src/schemaJit.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",
