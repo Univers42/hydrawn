@@ -2,9 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import type { Board, BoardSummary, OsidrawFile } from "@drawnosaurus/contract";
 import type { StampedElement } from "../autosave/sceneDiff.ts";
 
-// `api/client.ts` reads the runtime config, which reads this SvelteKit virtual module.
-vi.mock("$env/dynamic/public", () => ({ env: {} }));
-
 const { ApiClientError } = await import("../api/client.ts");
 const { mergeAndReplace } = await import("./host.ts");
 

@@ -1,13 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { handle } from "@drawnosaurus/store/handlers";
 import { EXPIRY_MS, PART_BYTES } from "@drawnosaurus/store/limits";
 import { memoryStore } from "@drawnosaurus/store/memory";
 import type { StampedElement } from "../autosave/sceneDiff.ts";
-
-// `api/client.ts` (for `ApiClientError`) reads the runtime config, which reads this
-// SvelteKit virtual module; vitest has no resolver for it. See `config.test.ts`.
-vi.mock("$env/dynamic/public", () => ({ env: {} }));
 
 const { ApiClientError } = await import("../api/client.ts");
 const { classifyShared, StoredCopy } = await import("./storedCopy.ts");

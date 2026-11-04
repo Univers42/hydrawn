@@ -3,10 +3,6 @@ import type { Board } from "@drawnosaurus/contract";
 import type { DrawElement } from "@osionos/draw-engine/types";
 import legacyBoard from "../notes/fixtures/legacy-sticky-zxkqwodsxu.json";
 
-// `api/client.ts` (for `ApiClientError`) reads the runtime config, which reads this
-// SvelteKit virtual module; vitest has no resolver for it. See `config.test.ts`.
-vi.mock("$env/dynamic/public", () => ({ env: {} }));
-
 const { ApiClientError } = await import("../api/client.ts");
 const { DRAFT_REPAIR_WAIT_MS, openBoard } = await import("./openBoard.ts");
 

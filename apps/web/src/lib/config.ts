@@ -1,4 +1,3 @@
-import { env } from "$env/dynamic/public";
 import { hostTokens } from "./host/token.ts";
 import { BROWSER_MODE, HOST_MODE } from "./mode.ts";
 
@@ -6,7 +5,19 @@ import { BROWSER_MODE, HOST_MODE } from "./mode.ts";
  * Runtime config, in one place. The server build reads the DYNAMIC public env so one
  * image can point at different backends without a rebuild; the browser build has no
  * server to configure and takes build-time values instead.
+ *
+ * The env is handed in by the root layout (`usePublicEnv`) rather than imported from
+ * `$env/dynamic/public`: this module is in the board's import graph, and the board is also
+ * built as a library (`packages/board`) where no SvelteKit runtime exists. Unset, it is
+ * empty, which is what a mounted board needs: it never reaches the API or the relay.
  */
+export type PublicEnv = Readonly<Record<string, string | undefined>>;
+
+let env: PublicEnv = {};
+
+export function usePublicEnv(next: PublicEnv): void {
+  env = next;
+}
 
 /** Prefix for `/v1/...` requests. Empty means same origin. */
 export const apiBase = (): string => {
