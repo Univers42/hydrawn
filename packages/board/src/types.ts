@@ -1,4 +1,4 @@
-import type { BoardStore } from "@drawnosaurus/contract";
+import type { Board, BoardStore, BoardSummary, OsidrawFile } from "@drawnosaurus/contract";
 
 export type {
   Board,
@@ -34,4 +34,17 @@ export interface BoardHandle {
   setTheme(theme: BoardTheme): void;
   /** Sends what is pending, then unmounts the board and removes its root. */
   destroy(): Promise<void>;
+}
+
+/**
+ * The board routes a host reaches with its own credentials, for `createHostedStore`: a store
+ * that keeps whole scenes by `rev` (the osionos bridge's `/api/whiteboard/v1`). Each throws a
+ * `BoardStoreError` carrying the route's status — 404 from `getBoard` and 409 from
+ * `replaceBoard` are how a new board and a lost race are told apart.
+ */
+export interface HostedBoardApi {
+  getBoard(slug: string, options?: { tombstones?: boolean }): Promise<Board>;
+  replaceBoard(slug: string, scene: OsidrawFile, rev: number): Promise<Board>;
+  createBoard(title: string, slug?: string): Promise<BoardSummary>;
+  putThumbnail(slug: string, blob: Blob): Promise<void>;
 }

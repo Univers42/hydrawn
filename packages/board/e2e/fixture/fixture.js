@@ -1,33 +1,31 @@
-// A host page: an in-memory BoardStore, a shadow root, the built library. What the store is
+// A host page: in-memory board routes, a shadow root, the built library. What the store is
 // asked to do is kept on `window.__store` for the spec to read.
-import { BoardStoreError, boardCss, mountBoard } from "/dist/index.js";
+import { BoardStoreError, boardCss, createHostedStore, mountBoard } from "/dist/index.js";
 
 const now = () => new Date().toISOString();
 const boards = new Map();
 const calls = [];
 
-const summary = ({ scene, ...rest }) => ({ ...rest, elementCount: scene.elements.length });
+const summary = ({ scene, ...rest }) => ({
+  ...rest,
+  elementCount: scene.elements.filter((element) => !element.isDeleted).length,
+});
 
-const store = {
-  async list() {
-    calls.push(["list"]);
-    return { items: [...boards.values()].map(summary), nextCursor: null };
-  },
-  async create(title) {
-    calls.push(["create", title]);
-    throw new BoardStoreError(403, "forbidden", "This host does not create boards.");
-  },
-  async get(slug) {
-    calls.push(["get", slug]);
+// The routes a host like the osionos bridge serves: whole scenes kept by `rev`, a 404 for a
+// board not created yet, a 409 for a write against a rev that moved. The store over them is
+// the library's own (`createHostedStore`), which merges each save on the page's side.
+const bridge = {
+  async getBoard(slug) {
+    calls.push(["getBoard", slug]);
     const board = boards.get(slug);
     if (!board) throw new BoardStoreError(404, "not_found", "No such board.");
     return structuredClone(board);
   },
-  async patchElements(slug, patch) {
-    calls.push(["patchElements", slug, patch.elements.length]);
-    const board = boards.get(slug) ?? {
+  async createBoard(title, slug) {
+    calls.push(["createBoard", title, slug]);
+    const board = {
       slug,
-      title: "Fixture",
+      title,
       rev: 0,
       bounds: null,
       createdAt: now(),
@@ -35,29 +33,23 @@ const store = {
       thumbnailAt: null,
       scene: { type: "osidraw", version: 1, elements: [] },
     };
-    const byId = new Map(board.scene.elements.map((element) => [element.id, element]));
-    for (const element of patch.elements) byId.set(element.id, element);
-    board.scene.elements = [...byId.values()];
-    board.rev += 1;
-    board.updatedAt = now();
     boards.set(slug, board);
-    return { ...summary(board), applied: patch.elements.length, rejected: 0 };
+    return summary(board);
   },
-  async replace(slug, scene, rev) {
-    calls.push(["replace", slug, rev]);
-    throw new BoardStoreError(409, "conflict", "Not in this fixture.");
-  },
-  async remove(slug) {
-    calls.push(["remove", slug]);
-    boards.delete(slug);
+  async replaceBoard(slug, scene, rev) {
+    calls.push(["replaceBoard", slug, rev]);
+    const board = boards.get(slug);
+    if (!board) throw new BoardStoreError(404, "not_found", "No such board.");
+    if (board.rev !== rev) throw new BoardStoreError(409, "conflict", "The board moved on.");
+    Object.assign(board, { scene, rev: rev + 1, updatedAt: now() });
+    return structuredClone(board);
   },
   async putThumbnail(slug, blob) {
     calls.push(["putThumbnail", slug, blob.size]);
   },
-  async thumbnail() {
-    return null;
-  },
 };
+
+const store = createHostedStore(bridge, () => "Fixture board");
 
 const host = document.getElementById("host");
 const shadow = host.attachShadow({ mode: "open" });

@@ -9,7 +9,7 @@
  * specifiers, as everywhere in this workspace: a consumer's tsconfig needs
  * `allowImportingTsExtensions` (with `noEmit`, the usual Vite setup).
  */
-import type { BoardHandle, MountBoardOptions } from "./src/types.ts";
+import type { BoardHandle, BoardStore, HostedBoardApi, MountBoardOptions } from "./src/types.ts";
 
 export type * from "./src/types.ts";
 
@@ -24,6 +24,16 @@ export declare function mountBoard(
   target: HTMLElement | ShadowRoot,
   options: MountBoardOptions,
 ): BoardHandle;
+
+/**
+ * A `BoardStore` over `client`, each save merged into the stored board by the contract's rule
+ * (the merge the hydrawn osionos build runs). `newTitle` names a board the first save creates.
+ * `list`, `remove` and `thumbnail` reject with status 501: a mounted board never calls them.
+ */
+export declare function createHostedStore(
+  client: HostedBoardApi,
+  newTitle: () => string,
+): BoardStore;
 
 /** The board's whole stylesheet, for `CSSStyleSheet.replaceSync` into a shadow root. */
 export declare const boardCss: string;

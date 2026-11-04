@@ -89,15 +89,38 @@ async function thumbnail(slug: string, version: string): Promise<string | null> 
   return blob ? URL.createObjectURL(blob) : null;
 }
 
+/** What a host gives `createHostedStore`: the board routes it reaches, with its own token. */
+export interface HostedApi extends HostApi {
+  putThumbnail: typeof api.putThumbnail;
+}
+
+const notHosted = async (): Promise<never> => {
+  throw new ApiClientError(501, "not_hosted", "A hosted board has no gallery.");
+};
+
+/**
+ * A store over a host's board routes that keep whole scenes by `rev` (the osionos bridge),
+ * merging each save on this side (`mergeAndReplace`). The board's own calls only; the
+ * gallery's — list, remove, a card's picture — are refused, and a mounted board never makes
+ * them (`@hydrawn/board`).
+ */
+export function createHostedStore(client: HostedApi, newTitle: () => string): BoardStore {
+  return {
+    list: notHosted,
+    create: (title) => client.createBoard(title),
+    get: (slug, options) => client.getBoard(slug, options),
+    patchElements: (slug, patch) => mergeAndReplace(client, slug, patch, newTitle),
+    replace: (slug, scene, rev) => client.replaceBoard(slug, scene, rev),
+    remove: notHosted,
+    putThumbnail: (slug, blob) => client.putThumbnail(slug, blob),
+    thumbnail: notHosted,
+  };
+}
+
 /** The osionos build's store: the API client, aimed at the bridge, merging on this side. */
 export const hostStore: BoardStore = {
+  ...createHostedStore(api, () => newBoardTitle(new URLSearchParams(location.search))),
   list: api.listBoards,
-  create: api.createBoard,
-  get: api.getBoard,
-  patchElements: (slug, patch) =>
-    mergeAndReplace(api, slug, patch, () => newBoardTitle(new URLSearchParams(location.search))),
-  replace: api.replaceBoard,
   remove: api.deleteBoard,
-  putThumbnail: api.putThumbnail,
   thumbnail,
 };

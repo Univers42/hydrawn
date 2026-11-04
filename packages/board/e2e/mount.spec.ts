@@ -52,9 +52,7 @@ async function drawRectangle(page: Page): Promise<void> {
 }
 
 const writes = async (page: Page): Promise<string[]> =>
-  (await calls(page))
-    .map(([name]) => name)
-    .filter((name) => name !== "get" && name !== "list" && name !== "thumbnail");
+  (await calls(page)).map(([name]) => name).filter((name) => name !== "getBoard");
 
 test("mounted in a shadow root, a drawn shape is saved, and destroy gives everything back", async ({
   page,
@@ -80,13 +78,13 @@ test("mounted in a shadow root, a drawn shape is saved, and destroy gives everyt
   const canvas = page.locator("canvas").first();
   await expect(canvas).toBeVisible();
   // Opened from the store: a 404, so the board is the new one the title names.
-  await expect.poll(() => calls(page)).toContainEqual(["get", "fixture"]);
+  await expect.poll(() => calls(page)).toContainEqual(["getBoard", "fixture"]);
   await expect(page.locator(".hydrawn-board")).toHaveCount(1);
 
   await drawRectangle(page);
 
   await expect
-    .poll(async () => (await calls(page)).filter(([name]) => name === "patchElements").length, {
+    .poll(async () => (await calls(page)).filter(([name]) => name === "replaceBoard").length, {
       timeout: 10_000,
     })
     .toBeGreaterThan(0);
@@ -157,7 +155,7 @@ test("read-only, a drawn shape is never written to the store", async ({ page }) 
     (window as never as { __mount: (options: object) => void }).__mount({ readOnly: true }),
   );
   await expect(page.getByRole("application")).toBeVisible();
-  await expect.poll(() => calls(page)).toContainEqual(["get", "fixture"]);
+  await expect.poll(() => calls(page)).toContainEqual(["getBoard", "fixture"]);
 
   await drawRectangle(page);
   // Past the autosaver's debounce (`DEFAULT_DEBOUNCE_MS`, 800 in `autosaver.ts`) and then

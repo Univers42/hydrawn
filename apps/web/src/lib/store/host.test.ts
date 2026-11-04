@@ -3,7 +3,7 @@ import type { Board, BoardSummary, OsidrawFile } from "@drawnosaurus/contract";
 import type { StampedElement } from "../autosave/sceneDiff.ts";
 
 const { ApiClientError } = await import("../api/client.ts");
-const { mergeAndReplace } = await import("./host.ts");
+const { createHostedStore, mergeAndReplace } = await import("./host.ts");
 
 interface Shape extends StampedElement {
   type: string;
@@ -179,5 +179,31 @@ describe("mergeAndReplace", () => {
     const bridge = fakeBridge(board(1, [shape("a"), shape("b")]));
     await mergeAndReplace(bridge, "abcdef123456", { elements: [], order: ["b", "a"] }, title);
     expect(bridge.current().scene.elements.map((element) => element.id)).toEqual(["b", "a"]);
+  });
+});
+
+describe("createHostedStore", () => {
+  it("saves through the host's client, merged by the contract's rule", async () => {
+    const bridge = fakeBridge(board(1, [shape("a")]));
+    const putThumbnail = vi.fn(async () => undefined);
+    const store = createHostedStore({ ...bridge, putThumbnail }, title);
+
+    await store.patchElements("abcdef123456", { elements: [shape("b")] });
+    expect(bridge.current().scene.elements.map((element) => element.id)).toEqual(["a", "b"]);
+    expect((await store.get("abcdef123456")).rev).toBe(2);
+    const png = new Blob([new Uint8Array([1])]);
+    await store.putThumbnail("abcdef123456", png);
+    expect(putThumbnail).toHaveBeenCalledWith("abcdef123456", png);
+  });
+
+  it("refuses the gallery's calls, which a mounted board never makes, with a status", async () => {
+    const store = createHostedStore({ ...fakeBridge(board(1, [])), putThumbnail: vi.fn() }, title);
+    for (const call of [
+      () => store.list(),
+      () => store.remove("x"),
+      () => store.thumbnail("x", "v"),
+    ]) {
+      await expect(call()).rejects.toMatchObject({ status: 501 });
+    }
   });
 });

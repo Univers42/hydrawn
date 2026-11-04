@@ -34,7 +34,11 @@ That is `e2e/fixture/fixture.js`, which the browser test drives.
 
 ## What the host provides
 
-**A `BoardStore`** (`packages/contract/src/boardStore.ts`). Mounted, the board calls:
+**A `BoardStore`** (`packages/contract/src/boardStore.ts`). A host whose routes keep whole
+scenes by `rev`, as the osionos bridge does, passes `createHostedStore(client, newTitle)`
+instead of writing one: it implements `getBoard`, `replaceBoard`, `createBoard` and
+`putThumbnail` (`HostedBoardApi`) and the library merges each save by the contract's rule.
+Mounted, the board calls:
 
 | Call                          | When                                                                 |
 | ----------------------------- | -------------------------------------------------------------------- |
