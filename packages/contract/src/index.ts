@@ -86,4 +86,3 @@ export {
 } from "./share.ts";
 
 export { isPngBytes } from "./thumbnail.ts";
-
