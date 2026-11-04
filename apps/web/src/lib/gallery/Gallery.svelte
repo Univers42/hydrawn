@@ -87,7 +87,13 @@
     </div>
 
     <form onsubmit={add} class="create-form">
-      <input bind:value={title} name="title" aria-label="New board title" placeholder="New board title…" maxlength="200" />
+      <input
+        bind:value={title}
+        name="title"
+        aria-label="New board title"
+        placeholder="New board title…"
+        maxlength="200"
+      />
       <button type="submit" class="create-btn" disabled={busy || title.trim() === ""}
         >+ New Board</button
       >

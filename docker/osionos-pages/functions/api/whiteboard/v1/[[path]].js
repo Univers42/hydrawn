@@ -14,7 +14,14 @@
 // Caveat: one extra hop through Cloudflare per call, and the bridge sees Cloudflare egress
 // addresses, so any per-IP limit in front of it counts all hydrawn users as a few clients.
 const UPSTREAM = "https://baas.tail10f2ea.ts.net:10000";
-const DROPPED_REQUEST_HEADERS = ["cookie", "forwarded", "x-forwarded-for", "x-forwarded-host", "x-forwarded-proto", "x-real-ip"];
+const DROPPED_REQUEST_HEADERS = [
+  "cookie",
+  "forwarded",
+  "x-forwarded-for",
+  "x-forwarded-host",
+  "x-forwarded-proto",
+  "x-real-ip",
+];
 
 export async function onRequest({ request }) {
   const url = new URL(request.url);
