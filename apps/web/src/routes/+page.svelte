@@ -18,6 +18,8 @@
   });
 </script>
 
+<svelte:head><title>Your Boards · Hydrawn</title></svelte:head>
+
 {#if !BROWSER_MODE}
   <Gallery />
 {/if}
