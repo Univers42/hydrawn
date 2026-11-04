@@ -3,10 +3,13 @@ import type {
   BoardList,
   BoardSummary,
   OsidrawFile,
+  PatchAck,
   ShareInfo,
 } from "@drawnosaurus/contract";
 import { apiBase, apiTokens } from "../config.ts";
-import type { ScenePatch, StampedElement } from "../autosave/sceneDiff.ts";
+import type { ScenePatch, StampedElement } from "@drawnosaurus/contract";
+
+export type { PatchAck };
 
 /**
  * Typed client for the v1 API.
@@ -151,11 +154,6 @@ export const getBoard = (slug: string, options: { tombstones?: boolean } = {}): 
 
 export const deleteBoard = (slug: string): Promise<void> =>
   request<void>(`/v1/boards/${slug}`, { method: "DELETE" });
-
-export interface PatchAck extends BoardSummary {
-  applied: number;
-  rejected: number;
-}
 
 export const patchElements = <T extends StampedElement>(
   slug: string,
