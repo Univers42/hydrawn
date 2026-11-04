@@ -24,6 +24,7 @@
  * is still in the document, which in a browser is a call on a detached node and no focus
  * at all.
  */
+import { rootOf } from "./shadowRoot.ts";
 import { giveKeysBack } from "./textEditor.ts";
 
 /**
@@ -34,10 +35,11 @@ import { giveKeysBack } from "./textEditor.ts";
  * unmounted by its own `{#if}`.
  */
 export function takeFocus(into?: HTMLElement | null): () => void {
-  const returnTo = document.activeElement as HTMLElement | null;
+  const root = rootOf(into);
+  const returnTo = root.activeElement as HTMLElement | null;
   into?.focus();
   return () => {
     if (returnTo && returnTo !== document.body && returnTo.isConnected) returnTo.focus();
-    else giveKeysBack(document);
+    else giveKeysBack(root);
   };
 }

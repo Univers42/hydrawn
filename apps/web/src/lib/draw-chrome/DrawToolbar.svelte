@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { eventOrigin, rootOf } from "./shadowRoot.ts";
   /**
    * The tool bar: the common tools in a row, the occasional ones behind a button.
    *
@@ -77,7 +78,7 @@
 
   function onWindowPointerDown(event: PointerEvent): void {
     if (!open) return;
-    if (root && !root.contains(event.target as Node)) open = false;
+    if (root && !root.contains(eventOrigin(event) as Node)) open = false;
   }
 
   function onMenuKeydown(event: KeyboardEvent): void {
@@ -91,7 +92,7 @@
     event.preventDefault();
     const items = Array.from(root?.querySelectorAll<HTMLElement>(".menu-item") ?? []);
     if (items.length === 0) return;
-    const at = items.indexOf(document.activeElement as HTMLElement);
+    const at = items.indexOf(rootOf(root).activeElement as HTMLElement);
     const next = event.key === "ArrowDown" ? at + 1 : at - 1;
     items[(next + items.length) % items.length]?.focus();
   }

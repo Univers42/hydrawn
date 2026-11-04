@@ -1,10 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { goto } from "$app/navigation";
-  import { resolve } from "$app/paths";
-  import { ApiClientError } from "$lib/api/client.ts";
-  import { boards } from "$lib/store/index.ts";
-  import { TEMPLATES } from "$lib/templates/index.ts";
+  import { ApiClientError } from "../api/client.ts";
+  import { getBoardHost } from "../board/host.ts";
+  import { TEMPLATES } from "../templates/index.ts";
   import { takeFocus } from "./focusHandback.ts";
 
   /**
@@ -18,7 +16,8 @@
    * only on the 403 that answers a guest falls back to the other one, inserting into the
    * board already open. Either way the template's ids are never reused verbatim into a
    * *running* scene: a fresh board gets the file as it is (nothing there to collide
-   * with); an insert goes through `engine.pasteJson`, which mints its own.
+   * with); an insert goes through `engine.pasteJson`, which mints its own. A host that
+   * cannot open another board (`mountBoard`) always inserts.
    */
   let {
     onInsert,
@@ -27,6 +26,8 @@
     onInsert: (json: string) => void;
     onClose: () => void;
   } = $props();
+
+  const { store: boards, openBoard } = getBoardHost();
 
   let busyId = $state<string | null>(null);
   let error = $state<string | null>(null);
@@ -45,11 +46,16 @@
     if (busyId) return;
     busyId = template.id;
     error = null;
+    if (openBoard === undefined) {
+      onInsert(JSON.stringify(template.file));
+      onClose();
+      return;
+    }
     try {
       const summary = await boards.create(template.name);
       await boards.replace(summary.slug, template.file, summary.rev);
       onClose();
-      await goto(resolve("/boards/[slug]", { slug: summary.slug }));
+      await openBoard(summary.slug);
     } catch (cause) {
       if (cause instanceof ApiClientError && cause.status === 403) {
         onInsert(JSON.stringify(template.file));

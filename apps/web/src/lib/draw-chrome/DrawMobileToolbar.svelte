@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { eventOrigin } from "./shadowRoot.ts";
   /**
    * The phone's bottom bar: the tools a thumb can reach.
    *
@@ -112,7 +113,7 @@
 
   function onWindowPointerDown(event: PointerEvent): void {
     if (!open) return;
-    const target = event.target as Node | null;
+    const target = eventOrigin(event) as Node | null;
     if (target && row?.contains(target)) return;
     open = null;
   }

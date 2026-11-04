@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, onMount, tick } from "svelte";
+  import { onDestroy, onMount, tick, untrack } from "svelte";
   import { DrawCanvas } from "@osionos/draw-engine/svelte";
   import { screenToWorld, worldToScreen } from "@osionos/draw-engine/cameraMath";
   import { DARK_THEME, EMPTY_SELECTION_STYLE, LIGHT_THEME } from "@osionos/draw-engine/types";
@@ -155,6 +155,7 @@
   import DrawModals from "./DrawModals.svelte";
   import PeerCursors from "./PeerCursors.svelte";
   import "./draw-chrome.css";
+  import { eventOrigin } from "./shadowRoot.ts";
   import { formFactorFor, type FormFactor } from "./formFactor.ts";
   import { TITLE_MAX, type TopBarPlan } from "./topBar.ts";
   import { createTouchController } from "./touchGesture.ts";
@@ -174,6 +175,8 @@
     onShareLive,
     onPeerJoined,
     shared = null,
+    theme: hostTheme,
+    themeRoot,
   }: {
     scene: Scene;
     title?: string;
@@ -205,6 +208,16 @@
     onPeerJoined?: () => Promise<void>;
     /** What to say about the shared copy, or null when the drawing is not shared. */
     shared?: SharedLine | null;
+    /**
+     * The host's theme (`mountBoard`). Set, it is followed in place of the preference this
+     * browser stored, and a pick from the menu is not stored: the host owns the choice.
+     */
+    theme?: ThemePreference | undefined;
+    /**
+     * The element that carries the `dark` class and the theme tokens, and goes full screen
+     * to present: `<html>` in the app, the board's own root when mounted in a shadow root.
+     */
+    themeRoot?: HTMLElement | undefined;
     /**
      * The scene changed. `origin` says whose change it is: "local" for the person at the
      * board, "remote" for one that arrived from a peer. Each saves only their own.
@@ -681,7 +694,7 @@
     ink = themeMode === "dark" ? "#f8f9fa" : "#1e1e1e";
     engine?.setTheme(theme);
     if (typeof document !== "undefined") {
-      document.documentElement.classList.toggle("dark", themeMode === "dark");
+      themeHost().classList.toggle("dark", themeMode === "dark");
     }
     const cur = engine?.getNextStyle();
     if (cur && (cur.strokeColor === "#1e1e1e" || cur.strokeColor === "#f8f9fa")) {
@@ -692,12 +705,25 @@
 
   function pickTheme(preference: ThemePreference): void {
     themePreference = preference;
-    persistThemePreference(
-      typeof localStorage === "undefined" ? undefined : localStorage,
-      preference,
-    );
+    if (hostTheme === undefined) {
+      persistThemePreference(
+        typeof localStorage === "undefined" ? undefined : localStorage,
+        preference,
+      );
+    }
     applyTheme();
   }
+
+  function themeHost(): HTMLElement {
+    return themeRoot ?? document.documentElement;
+  }
+
+  // The host changed its theme after the board opened (`mountBoard`'s `setTheme`).
+  $effect(() => {
+    if (hostTheme === undefined || hostTheme === untrack(() => themePreference)) return;
+    themePreference = hostTheme;
+    untrack(applyTheme);
+  });
 
   function pickGrid(patch: Partial<GridPreference>): void {
     applySnapModes(pickGridMode({ objectsSnap, grid }, patch));
@@ -1722,7 +1748,7 @@
     await tick();
     showSlide(0, { instant: false });
     try {
-      await document.documentElement.requestFullscreen?.();
+      await themeHost().requestFullscreen?.();
       presentFullscreen = document.fullscreenElement !== null;
     } catch {
       // Refused, or unavailable in this browser — presenting still works without it.
@@ -1845,7 +1871,7 @@
     // Apply the stored choice *before* reading the tokens: themeFromCss resolves the
     // canvas colours off the host CSS variables, and the `dark` class is what swaps
     // them. Reading first would hand the engine a white canvas under dark chrome.
-    themePreference = readThemePreference(localStorage);
+    themePreference = hostTheme ?? readThemePreference(localStorage);
     canvasBackground = readCanvasBackground(localStorage);
     grid = readGridPreference(localStorage);
     objectsSnap = readObjectsSnapPreference(localStorage);
@@ -1856,13 +1882,9 @@
     engine?.setObjectsSnap(objectsSnap);
     engine?.setDynamicSize(dynamicSize);
     themeMode = resolveThemeMode(themePreference, systemPrefersDark());
-    document.documentElement.classList.toggle("dark", themeMode === "dark");
+    themeHost().classList.toggle("dark", themeMode === "dark");
 
-    const resolved = themeFromCss(
-      getComputedStyle(document.documentElement),
-      undefined,
-      canvasBackground,
-    );
+    const resolved = themeFromCss(getComputedStyle(themeHost()), undefined, canvasBackground);
     theme = resolved.theme;
     ink = resolved.ink;
 
@@ -2187,7 +2209,11 @@
    * the shortcuts dialog, and `?` to stack a second one.
    */
   function onAppShortcut(event: KeyboardEvent): void {
-    if (isTextField(event.target)) return;
+    const target = eventOrigin(event);
+    // Mounted in a host's page (`themeRoot` set), the board hears only the keys typed into
+    // it: the window is the host's, and so are the keys typed anywhere else on it.
+    if (themeRoot && !themeRoot.contains(target as Node | null)) return;
+    if (isTextField(target)) return;
 
     const mod = event.metaKey || event.ctrlKey;
     const key = event.key.toLowerCase();
@@ -2195,7 +2221,7 @@
     // pure, tested `appShortcut` (`shortcuts.ts`) — the registry's proof runs real events
     // through it, which an inline condition here could not offer. `keyTarget` is the same
     // question `onStyleShortcut` asks, and it is what keeps a chord out of a field.
-    const shortcut = appShortcut(event, presenting, keyTarget(event.target));
+    const shortcut = appShortcut(event, presenting, keyTarget(target));
 
     if (event.key === "Escape") {
       // The engine lets the eraser's marks go on the same key; the trail goes with them.
@@ -2203,7 +2229,7 @@
       // and `DrawModals.svelte` decides which one, innermost first.
       eraserTrail.stop();
       activeEmbed = null;
-    } else if (insideDialog(event.target)) {
+    } else if (insideDialog(target)) {
       return;
     } else if (mod && event.shiftKey && key === "e") {
       event.preventDefault();

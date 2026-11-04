@@ -2,6 +2,7 @@
   import { onDestroy, onMount } from "svelte";
   import { paletteGroups, type Command } from "./commandPalette.ts";
   import { takeFocus } from "./focusHandback.ts";
+  import { rootOf } from "./shadowRoot.ts";
 
   let {
     commands,
@@ -39,7 +40,7 @@
   onDestroy(() => {
     // Unless the command gave focus somewhere to go — a dialog it opened, focusing its
     // own field — which handing it back would take away from under the keyboard.
-    const now = document.activeElement;
+    const now = rootOf(root).activeElement;
     if (now === null || now === document.body || root?.contains(now)) handBack?.();
   });
 

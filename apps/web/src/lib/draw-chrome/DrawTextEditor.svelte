@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { eventOrigin, rootOf } from "./shadowRoot.ts";
   /**
    * The text being typed, over the canvas — which does not paint it meanwhile, so it is
    * never on screen twice. A port of Excalidraw's `textWysiwyg`
@@ -113,10 +114,11 @@
   function finish(commit: boolean, viaKeyboard = false, boardPress = false): void {
     if (finished) return;
     finished = true;
-    const focused = document.activeElement === node;
+    const root = rootOf(node);
+    const focused = root.activeElement === node;
     if (commit && node) engine.commitTextEdit(node.value, viaKeyboard);
     // The keyboard goes back to the board, so Enter opens the text again.
-    if (focused) document.querySelector<HTMLElement>('.draw-chrome [role="application"]')?.focus();
+    if (focused) root.querySelector<HTMLElement>('.draw-chrome [role="application"]')?.focus();
     onDone(boardPress);
   }
 
@@ -189,12 +191,13 @@
    * or a tool, brings none, and its click is then run after the commit, as the oracle's is.
    */
   function onWindowPointerDown(event: PointerEvent): void {
-    if (finished || event.target === node) return;
-    if (pressKeepsEditor(event.target as Element | null, event.button)) {
+    const target = eventOrigin(event);
+    if (finished || target === node) return;
+    if (pressKeepsEditor(target as Element | null, event.button)) {
       blurEnds = false;
       window.addEventListener("pointerup", onPressEnd);
     } else {
-      const onBoard = event.target instanceof HTMLCanvasElement;
+      const onBoard = target instanceof HTMLCanvasElement;
       finish(true, false, onBoard && event.button === 0);
     }
   }
@@ -208,7 +211,7 @@
     window.removeEventListener("pointerup", onPressEnd);
     setTimeout(() => {
       if (finished || !node) return;
-      const active = document.activeElement;
+      const active = rootOf(node).activeElement;
       const keeps = isWritable(active) || active?.closest('select, [role="dialog"]');
       if (keeps && active !== node) return;
       blurEnds = true;
