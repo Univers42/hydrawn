@@ -86,3 +86,5 @@ export {
 } from "./share.ts";
 
 export { isPngBytes } from "./thumbnail.ts";
+
+export { disableSchemaJit } from "./schemaJit.ts";

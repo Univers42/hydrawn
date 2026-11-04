@@ -1,3 +1,5 @@
+import { disableSchemaJit } from "@drawnosaurus/contract";
+
 /**
  * Client-side only, on purpose.
  *
@@ -6,5 +8,8 @@
  * drawing surface. Rendering the shell on the server would buy nothing and force
  * every engine import to be dynamic.
  */
+// Before any page parses: the board CSP forbids eval (see schemaJit.ts).
+disableSchemaJit();
+
 export const ssr = false;
 export const prerender = false;
