@@ -9,7 +9,7 @@ vi.mock("../config.ts", () => ({
   apiTokens: () => (hosted ? tokens : null),
 }));
 
-const { getBoard, ApiClientError } = await import("./client.ts");
+const { deleteBoard, getBoard, ApiClientError } = await import("./client.ts");
 
 const fetchMock = vi.fn<typeof fetch>();
 vi.stubGlobal("fetch", fetchMock);
@@ -67,5 +67,80 @@ describe("the API client in the osionos build", () => {
     await getBoard("abcdef");
     expect(sentAuthorization(0)).toBeUndefined();
     expect(tokens.current).not.toHaveBeenCalled();
+  });
+});
+
+// What nginx's `deny all` really sends: no envelope, and not JSON.
+const htmlRefusal = (status: number) =>
+  new Response(`<html>\r\n<head><title>${status}</title></head>\r\n</html>\r\n`, {
+    status,
+    headers: { "content-type": "text/html" },
+  });
+
+describe("an error the API did not write", () => {
+  it("says deleting is turned off when the edge refuses with an HTML 403", async () => {
+    hosted = false;
+    const refusal = htmlRefusal(403);
+    const parse = vi.spyOn(refusal, "json");
+    fetchMock.mockResolvedValue(refusal);
+    const failure = deleteBoard("abcdef");
+    await expect(failure).rejects.toBeInstanceOf(ApiClientError);
+    await expect(failure).rejects.toMatchObject({
+      status: 403,
+      message: "Deleting boards is turned off here",
+    });
+    expect(parse).not.toHaveBeenCalled();
+  });
+
+  it("gives any other refused call a plain message", async () => {
+    hosted = false;
+    fetchMock.mockResolvedValue(htmlRefusal(403));
+    await expect(getBoard("abcdef")).rejects.toMatchObject({
+      status: 403,
+      message: "This action is turned off here",
+    });
+  });
+
+  it("reports a proxy's HTML 502 by its status", async () => {
+    hosted = false;
+    fetchMock.mockResolvedValue(htmlRefusal(502));
+    await expect(getBoard("abcdef")).rejects.toMatchObject({
+      status: 502,
+      message: "request failed with 502",
+    });
+  });
+
+  it("survives a body labelled JSON that is not", async () => {
+    hosted = false;
+    fetchMock.mockResolvedValue(
+      new Response("<html></html>", {
+        status: 403,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    await expect(deleteBoard("abcdef")).rejects.toMatchObject({
+      message: "Deleting boards is turned off here",
+    });
+  });
+});
+
+describe("hydrawn standalone, where DELETE is allowed", () => {
+  it("deletes on a 204", async () => {
+    hosted = false;
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
+    await expect(deleteBoard("abcdef")).resolves.toBeUndefined();
+    expect(fetchMock.mock.calls[0]?.[1]?.method).toBe("DELETE");
+  });
+
+  it("keeps the API's own code and message on a refusal", async () => {
+    hosted = false;
+    fetchMock.mockResolvedValue(
+      json(403, { error: { code: "host_only", message: "only the host may" } }),
+    );
+    await expect(deleteBoard("abcdef")).rejects.toMatchObject({
+      status: 403,
+      code: "host_only",
+      message: "only the host may",
+    });
   });
 });

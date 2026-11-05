@@ -33,6 +33,10 @@ export class ApiClientError extends Error {
   }
 }
 
+interface ErrorEnvelope {
+  error?: { code?: string; message?: string };
+}
+
 /** A 409 is expected traffic (someone else wrote first), so callers can branch on it. */
 export const isConflict = (error: unknown): boolean =>
   error instanceof ApiClientError && error.status === 409;
@@ -64,7 +68,24 @@ async function send(path: string, init: RequestInit): Promise<Response> {
   return attempt();
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+/**
+ * The API's { error: { code, message } }, or null when something in front of it answered:
+ * the root stack's TLS edge refuses with an HTML page, and that must never reach a parser.
+ *
+ * Caveat: trusts the content-type. An envelope sent under another type loses its code and
+ * message to the caller's fallback; the API and the osionos bridge both label theirs.
+ */
+async function errorEnvelope(response: Response): Promise<ErrorEnvelope | null> {
+  if (!response.headers.get("content-type")?.includes("json")) return null;
+  return (await response.json().catch(() => null)) as ErrorEnvelope | null;
+}
+
+/** `refusedMessage` is what a person reads when a 403 comes with no word from the API. */
+async function request<T>(
+  path: string,
+  init: RequestInit = {},
+  refusedMessage = "This action is turned off here",
+): Promise<T> {
   const response = await send(path, {
     ...init,
     headers: {
@@ -75,21 +96,19 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   if (response.status === 204) return undefined as T;
 
-  const text = await response.text();
-  const payload: unknown = text === "" ? null : JSON.parse(text);
-
   if (!response.ok) {
-    // The API always answers with { error: { code, message } }; fall back in case a
-    // proxy or the platform produced the response instead.
-    const envelope = payload as { error?: { code?: string; message?: string } } | null;
+    const envelope = await errorEnvelope(response);
+    const fallback =
+      response.status === 403 ? refusedMessage : `request failed with ${response.status}`;
     throw new ApiClientError(
       response.status,
       envelope?.error?.code ?? "http_error",
-      envelope?.error?.message ?? `request failed with ${response.status}`,
+      envelope?.error?.message ?? fallback,
     );
   }
 
-  return payload as T;
+  const text = await response.text();
+  return (text === "" ? null : JSON.parse(text)) as T;
 }
 
 export const listBoards = (limit?: number, cursor?: string): Promise<BoardList> => {
@@ -153,7 +172,7 @@ export const getBoard = (slug: string, options: { tombstones?: boolean } = {}): 
   request<Board>(`/v1/boards/${slug}${options.tombstones ? "?include=tombstones" : ""}`);
 
 export const deleteBoard = (slug: string): Promise<void> =>
-  request<void>(`/v1/boards/${slug}`, { method: "DELETE" });
+  request<void>(`/v1/boards/${slug}`, { method: "DELETE" }, "Deleting boards is turned off here");
 
 export const patchElements = <T extends StampedElement>(
   slug: string,
