@@ -44,7 +44,7 @@ function resolvePath(pathname) {
 }
 
 createServer((request, response) => {
-  const file = resolvePath(new URL(request.url ?? "/", "http://fixture").pathname);
+  const file = resolvePath(new URL(request.url ?? "/", "fixture://local").pathname);
   if (file === null || !statSync(file, { throwIfNoEntry: false })?.isFile()) {
     response.writeHead(404).end();
     return;
