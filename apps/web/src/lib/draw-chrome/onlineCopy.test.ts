@@ -5,10 +5,6 @@ import { memoryStore } from "@drawnosaurus/store/memory";
 import type { ScenePatch, StampedElement } from "../autosave/sceneDiff.ts";
 import type { OnlineCopyStore } from "./onlineCopy.ts";
 
-// `api/client.ts` (for `ApiClientError`) reads the runtime config, which reads this
-// SvelteKit virtual module; vitest has no resolver for it. See `config.test.ts`.
-vi.mock("$env/dynamic/public", () => ({ env: {} }));
-
 const { StoredCopy: Copy } = await import("../sharing/storedCopy.ts");
 const { OnlineCopy, ONLINE_COPY_THROTTLE_MS } = await import("./onlineCopy.ts");
 

@@ -3,10 +3,6 @@ import { SceneAutosaver, type AutosaveStatus, type FailureKind } from "../autosa
 import type { ScenePatch, StampedElement } from "../autosave/sceneDiff.ts";
 import { holdForSave, type Departure } from "./holdForSave.ts";
 
-// `api/client.ts` (for `ApiClientError`) reads the runtime config, which reads this
-// SvelteKit virtual module; vitest has no resolver for it. See `config.test.ts`.
-vi.mock("$env/dynamic/public", () => ({ env: {} }));
-
 const { ApiClientError } = await import("../api/client.ts");
 
 const el = (id: string): StampedElement => ({

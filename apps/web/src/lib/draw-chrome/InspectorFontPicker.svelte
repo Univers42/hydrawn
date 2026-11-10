@@ -3,6 +3,7 @@
   import Icon from "./Icon.svelte";
   import { takeFocus } from "./focusHandback.ts";
   import { QUICK_FONTS, fontGroups, fontLabel, fontPickerKey, type FontChoice } from "./fonts.ts";
+  import { eventOrigin } from "./shadowRoot.ts";
 
   /**
    * The font family row: three quick picks, a divider, and a trigger opening the list of
@@ -155,7 +156,7 @@
 
   function onWindowPointerDown(event: PointerEvent): void {
     if (!open) return;
-    const target = event.target as Node | null;
+    const target = eventOrigin(event) as Node | null;
     if (target && (dialog?.contains(target) || trigger?.contains(target))) return;
     onToggle(false);
   }

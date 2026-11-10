@@ -21,19 +21,11 @@
  *     wrong for a resurrected id (see `predictOrder`).
  */
 
-export interface StampedElement {
-  id: string;
-  version: number;
-  versionNonce: number;
-  updated: number;
-  isDeleted: boolean;
-}
+import type { ScenePatch, StampedElement } from "@drawnosaurus/contract";
 
-export interface ScenePatch<T extends StampedElement> {
-  elements: T[];
-  /** Only set when the predicted server order disagrees with the live one. */
-  order?: string[];
-}
+// Defined in the contract, beside `BoardStore` whose signatures carry them; re-exported for
+// the modules that diff scenes.
+export type { ScenePatch, StampedElement };
 
 const sameSequence = (a: readonly string[], b: readonly string[]): boolean =>
   a.length === b.length && a.every((id, index) => id === b[index]);

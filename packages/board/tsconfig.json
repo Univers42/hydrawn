@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node", "vite/client"],
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  // The entry imports Board.svelte, which tsc cannot read: svelte-check in apps/web types
+  // the component; this program types the library's own modules against a shim of it.
+  "include": ["index.d.ts", "src/**/*.ts", "tests/**/*.ts", "e2e/**/*.ts", "*.config.ts"]
+}

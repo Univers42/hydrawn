@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { rootOf } from "./shadowRoot.ts";
   /**
    * A frame's name, double-clicked into an input over its label — Excalidraw's
    * `editingFrame` (`App.tsx@1118751f:2219-2261` the input, `:2334-2340` the double click
@@ -33,7 +34,7 @@
     if (finished) return;
     finished = true;
     if (commit && node) engine.renameFrame(request.id, node.value);
-    document.querySelector<HTMLElement>('.draw-chrome [role="application"]')?.focus();
+    rootOf(node).querySelector<HTMLElement>('.draw-chrome [role="application"]')?.focus();
     onDone();
   }
 

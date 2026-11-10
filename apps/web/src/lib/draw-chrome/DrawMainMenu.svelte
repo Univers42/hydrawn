@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { resolve } from "$app/paths";
   import { BUILD, describeBuild } from "../build.ts";
+  import { getBoardHost } from "../board/host.ts";
   import type { DrawEngine } from "@osionos/draw-engine/engine";
   import { downloadBlob } from "./download.ts";
   import { takeFocus } from "./focusHandback.ts";
@@ -11,6 +11,7 @@
   import { menuShortcuts } from "./mainMenu.ts";
   import type { FormFactor } from "./formFactor.ts";
   import type { GridPreference, ThemePreference } from "./theme.ts";
+  import { eventOrigin, rootOf } from "./shadowRoot.ts";
 
   /**
    * The main menu, rebuilt to Excalidraw's shape.
@@ -81,6 +82,8 @@
     onOpenPath: () => void;
     onClose: () => void;
   } = $props();
+
+  const { galleryHref } = getBoardHost();
 
   let fileInput: HTMLInputElement;
   let root: HTMLDivElement | undefined;
@@ -155,7 +158,7 @@
   function onKeyDown(event: KeyboardEvent): void {
     const items = [...(root?.querySelectorAll<HTMLElement>("[role='menuitem']") ?? [])];
     if (items.length === 0) return;
-    const at = items.indexOf(document.activeElement as HTMLElement);
+    const at = items.indexOf(rootOf(root).activeElement as HTMLElement);
 
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
@@ -192,7 +195,7 @@
   onpointerdown={(event) => {
     // Dismiss on a click outside. No backdrop element: one would either swallow the
     // click that should have landed on the canvas, or need a blur to look deliberate.
-    if (root && !root.contains(event.target as Node)) onClose();
+    if (root && !root.contains(eventOrigin(event) as Node)) onClose();
   }}
 />
 
@@ -215,11 +218,16 @@
 >
   <div class="dropdown-menu-container">
     <!-- An anchor, not a button: it is navigation, so middle-click and open-in-new-tab work.
-         The board saves what is pending on the way out (`beforeNavigate`). -->
-    <a role="menuitem" class="dropdown-menu-item" href={resolve("/gallery")}>
-      <MainMenuIcon name="gallery" />
-      <span class="dropdown-menu-item__text">My drawings</span>
-    </a>
+         The board saves what is pending on the way out (`beforeNavigate`). A host with no
+         gallery (`mountBoard`) has no such item. The href is spread in, already resolved by
+         the route (`resolve("/gallery")`), which no-navigation-without-resolve cannot see
+         through the board's context. -->
+    {#if galleryHref !== undefined}
+      <a role="menuitem" class="dropdown-menu-item" {...{ href: galleryHref }}>
+        <MainMenuIcon name="gallery" />
+        <span class="dropdown-menu-item__text">My drawings</span>
+      </a>
+    {/if}
 
     <button type="button" role="menuitem" class="dropdown-menu-item" onclick={openFile}>
       <MainMenuIcon name="folder" />

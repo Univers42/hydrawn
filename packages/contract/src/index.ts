@@ -85,4 +85,6 @@ export {
   type TunnelState,
 } from "./share.ts";
 
+export type { BoardStore, PatchAck, ScenePatch, StampedElement } from "./boardStore.ts";
+
 export { isPngBytes } from "./thumbnail.ts";

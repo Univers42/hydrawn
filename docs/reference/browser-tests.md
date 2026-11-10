@@ -75,3 +75,10 @@ through, as `make test-e2e-public E2E_DOCKER_FLAGS="--memory 3g --memory-swap 3g
   is the dev server's, and the build that ships has none.
 - **Each test starts empty.** A browser context of its own, so its IndexedDB and
   localStorage hold nothing from another test.
+
+## The board library's run
+
+`packages/board/e2e/` drives the built library (`dist/`), not the app: a fixture page mounts
+it into a shadow root under a strict CSP (`packages/board/e2e/serve.mjs`), with an in-memory
+store. **`pnpm --filter @hydrawn/board test:browser`** builds and runs it, on port **5476**,
+with the same rules — no retries, one worker. CI runs it after `pnpm test:e2e`.

@@ -1,0 +1,36 @@
+{
+  "name": "@hydrawn/board",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The board as a library: mountBoard() renders the web app's own Board.svelte into a host's element or shadow root, saving through a BoardStore the host implements.",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./board.css": "./dist/index.css"
+  },
+  "files": [
+    "dist",
+    "index.d.ts",
+    "src/types.ts"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:browser": "vite build && playwright test -c playwright.config.ts"
+  },
+  "dependencies": {
+    "@drawnosaurus/contract": "workspace:*"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^6.2.1",
+    "@types/node": "^22.20.2",
+    "svelte": "^5.42.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12",
+    "vitest": "^3.2.4"
+  }
+}

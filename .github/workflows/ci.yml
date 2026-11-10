@@ -210,13 +210,19 @@ jobs:
 
       - run: pnpm test:e2e
 
+      - name: The board library, mounted in a host page under a strict CSP
+        # Builds packages/board to dist/ and drives that build, not the source: what ships.
+        run: pnpm --filter @hydrawn/board test:browser
+
       - uses: actions/upload-artifact@v4
         # Traces and screenshots, and only when something failed — they are how you find
         # out what a red browser test actually saw without reproducing it locally.
         if: failure()
         with:
           name: e2e-traces
-          path: test-results
+          path: |
+            test-results
+            packages/board/test-results
           retention-days: 7
 
   docker:

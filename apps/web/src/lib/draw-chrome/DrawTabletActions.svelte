@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { eventOrigin } from "./shadowRoot.ts";
   /**
    * The tablet's style panel: the oracle's compact column.
    *
@@ -145,7 +146,7 @@
   });
 
   function onWindowPointerDown(event: PointerEvent): void {
-    const target = event.target as Node | null;
+    const target = eventOrigin(event) as Node | null;
     if (target && (panel?.contains(target) || dialog?.contains(target))) return;
     open = null;
     openPicker = null;

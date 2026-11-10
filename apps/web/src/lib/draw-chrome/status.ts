@@ -1,5 +1,5 @@
-import type { AutosaveStatus } from "$lib/autosave/autosaver.ts";
-import type { ConnectionStatus } from "$lib/realtime/realtimeClient.ts";
+import type { AutosaveStatus } from "../autosave/autosaver.ts";
+import type { ConnectionStatus } from "../realtime/realtimeClient.ts";
 
 /**
  * What the header's save line reports: the saver's state, or `unread` — a drawing this

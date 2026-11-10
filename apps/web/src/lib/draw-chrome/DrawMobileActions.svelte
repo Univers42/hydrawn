@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { eventOrigin } from "./shadowRoot.ts";
   /**
    * The phone's compact style strip: what a selection can be made of, in one row.
    *
@@ -125,7 +126,7 @@
   }
 
   function onWindowPointerDown(event: PointerEvent): void {
-    const target = event.target as Node | null;
+    const target = eventOrigin(event) as Node | null;
     if (target && row?.contains(target)) return;
     open = null;
     openPicker = null;

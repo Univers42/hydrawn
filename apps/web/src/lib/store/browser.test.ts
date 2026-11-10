@@ -4,10 +4,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { slugSchema, type OsidrawFile } from "@drawnosaurus/contract";
 import type { StampedElement } from "../autosave/sceneDiff.ts";
 
-// `api/client.ts` (for `ApiClientError`) reads the runtime config, which reads this
-// SvelteKit virtual module; vitest has no resolver for it. See `config.test.ts`.
-vi.mock("$env/dynamic/public", () => ({ env: {} }));
-
 const { ApiClientError } = await import("../api/client.ts");
 const { openDraftDb } = await import("../autosave/draftDb.ts");
 const { browserStore } = await import("./browser.ts");

@@ -2,7 +2,7 @@
   import { onDestroy, onMount } from "svelte";
   import { renderSVG } from "uqr";
   import type { ShareInfo } from "@drawnosaurus/contract";
-  import { getShareInfo, startTunnel, stopTunnel } from "$lib/api/client.ts";
+  import { getShareInfo, startTunnel, stopTunnel } from "../api/client.ts";
   import type { ConnectionStatus, PeerCursor } from "../realtime/realtimeClient.ts";
   import { copyText, describeLink, internetPrompt, shareLinks, type ShareLink } from "./share.ts";
   import { takeFocus } from "./focusHandback.ts";

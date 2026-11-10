@@ -1,16 +1,20 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { apiBase, relayToken, relayWsUrl, usePublicEnv } from "./config.ts";
 
-// `$env/dynamic/public` is a SvelteKit virtual module; vitest has no resolver for it.
 // BROWSER_MODE is folded by Vite's `define`, so it is always false here: only the
 // server branch is testable at runtime. The browser branch is proven by `make build-public`.
 const env: Record<string, string | undefined> = {};
-vi.mock("$env/dynamic/public", () => ({ env }));
-
-const { apiBase, relayToken, relayWsUrl } = await import("./config.ts");
 
 describe("config (server build)", () => {
   beforeEach(() => {
     for (const key of Object.keys(env)) delete env[key];
+    usePublicEnv(env);
+  });
+
+  it("is empty when no env was handed in", () => {
+    usePublicEnv({});
+    expect(apiBase()).toBe("");
+    expect(relayWsUrl()).toBe("");
   });
 
   it("apiBase is empty when PUBLIC_API_URL is unset", () => {

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { eventOrigin, rootOf } from "./shadowRoot.ts";
   import { tick, untrack } from "svelte";
   import Icon from "./Icon.svelte";
   import { takeFocus } from "./focusHandback.ts";
@@ -123,7 +124,7 @@
   $effect(() => {
     const shade = current?.shade;
     if (shade != null) untrack(() => (activeShade = shade));
-    if (document.activeElement !== hexInput) hexText = (value ?? "").replace(/^#/, "");
+    if (rootOf(hexInput).activeElement !== hexInput) hexText = (value ?? "").replace(/^#/, "");
   });
 
   function holdFocus(event: MouseEvent): void {
@@ -193,7 +194,7 @@
 
   function onWindowPointerDown(event: PointerEvent): void {
     if (!open) return;
-    const target = event.target as Node | null;
+    const target = eventOrigin(event) as Node | null;
     if (target && (dialog?.contains(target) || trigger?.contains(target))) return;
     onToggle(false);
   }
