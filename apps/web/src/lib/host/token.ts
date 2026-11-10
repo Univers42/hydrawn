@@ -40,7 +40,9 @@ export interface HostTokenOptions {
 /** The reply's token, or null when the message is not exactly a token reply. */
 export function readReply(data: unknown, now: number): HostToken | null {
   if (typeof data !== "object" || data === null) return null;
-  const keys = Object.keys(data).sort().join(",");
+  const keys = Object.keys(data)
+    .sort((left, right) => left.localeCompare(right))
+    .join(",");
   if (keys !== "exp,token,type") return null;
   const { type, token, exp } = data as Record<string, unknown>;
   if (type !== TOKEN_REPLY || typeof token !== "string" || typeof exp !== "number") return null;

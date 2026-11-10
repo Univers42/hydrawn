@@ -70,10 +70,16 @@ RUN { \
 		echo 'add_header X-Content-Type-Options "nosniff" always;'; \
 		echo 'add_header Referrer-Policy "no-referrer" always;'; \
 		echo 'add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()" always;'; \
-	} > /etc/nginx/hydrawn-headers.conf \
-	&& rm /tmp/csp.txt \
-	&& nginx -t
+		} > /etc/nginx/hydrawn-headers.conf \
+		&& rm /tmp/csp.txt \
+		&& chown -R nginx:nginx /etc/nginx /var/cache/nginx /var/log/nginx \
+		&& nginx -t
 
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=6 \
   CMD wget -qO- http://127.0.0.1:8080/ >/dev/null 2>&1 || exit 1
+
+# The static server never needs root. Keep nginx's PID in /tmp because the default
+# /var/run/nginx.pid is not writable by the unprivileged runtime user.
+USER nginx
+CMD ["nginx", "-g", "daemon off; pid /tmp/nginx.pid;"]
