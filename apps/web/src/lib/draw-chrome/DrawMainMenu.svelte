@@ -332,6 +332,17 @@
       {/if}
     </button>
 
+    <a
+      role="menuitem"
+      class="dropdown-menu-item"
+      href="https://github.com/Univers42/hydrawn/issues/new"
+      target="_blank"
+      rel="noreferrer"
+    >
+      <MainMenuIcon name="help" />
+      <span class="dropdown-menu-item__text">Report an issue</span>
+    </a>
+
     <button
       type="button"
       role="menuitem"
