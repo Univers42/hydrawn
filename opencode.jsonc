@@ -111,9 +111,11 @@
       "/tmp/*": "allow",
     },
     "bash": {
-      // Nothing leaves this machine: the owner reviews the bunny/* branches locally.
+      // The owner authorized only `git push origin develop` from the root Hydrawn checkout; all other push forms stay denied.
       "git push*": "deny",
       "git -C * push*": "deny",
+      // Last-match exception; run from the root Hydrawn checkout as required by repo policy.
+      "git push origin develop": "allow",
       "gh *": "deny",
       "sudo *": "deny",
       // ~/.gitconfig includes ~/bunny/.gitconfig-nopush, which turns every push under ~/bunny

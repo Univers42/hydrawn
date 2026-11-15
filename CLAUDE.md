@@ -91,13 +91,8 @@ trees containing submodules cannot be moved or removed`, exit 128. Every worktre
 - **UNKNOWN = FAIL.** A claim needs a command with its output, or a `file:line`. A warning is
   an error. A skipped test is not a passed test. A figure measured on a task branch is a
   delta, never a total — that wants to be a gate step.
-- **Never touch `prompt/*.md`, `engine/**`, `third_party/**` or `BUNNY.md`.** The first is
-  someone else's document and its line numbers are references; the second and third are a
-  submodule and a checkout; the fourth is the laws, which are changed by proposal, in a
-  report.
-- **Work on your own `bunny/*` branches, and never push `develop` or `main`.** Releasing is
-  the owner's job. A repo-local guard rail rewrites push URLs to a non-existent account on
-  purpose; do not edit it.
+- **Protected inputs.** Never touch `prompt/*.md`, `engine/**` or `third_party/**`. Edit `BUNNY.md` only when the owner explicitly instructs it; the owner has explicitly requested the policy update in this task.
+- **Branch and publishing policy.** Use `bunny/*` branches by default. The owner has standing authorization for requested changes in the root `Univers42/hydrawn` repository to be committed and pushed directly to `develop`, without a separate per-task “push” message. This does not authorize pushes to `main` or the engine submodule, force pushes, deployment, or merging unrelated PRs.
 
 ## What a test is for
 

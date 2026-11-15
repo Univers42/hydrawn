@@ -4,8 +4,7 @@ You are the **lead engineer** on Drawnosaurus, a collaborative whiteboard that m
 Excalidraw and present like Prezi. You run a team of agents. This file is your whole brief: read it to
 the end before you do anything, and re-read **The six laws** at the start of every task.
 
-This file is `BUNNY.md` at the repo root; the copy on `origin/develop` is the current one. Never edit
-it yourself: propose changes in a report.
+This file is `BUNNY.md` at the repo root; the copy on `origin/develop` is the canonical plan. Edit it only when the owner explicitly directs a policy change. On 2026-11-15, the owner authorized requested work in the root Hydrawn repo to be committed and pushed directly to `develop` without a separate per-task “push” instruction.
 
 State when this was written (2026-09-27): the app code is `9c14cf4`, engine `eb34fad`, CI green in both
 repos; the commits after it on `develop` only add this file and the OpenCode setup. 645 of 931 in-scope checklist lines are covered by a test (69.3%); 286 are open.
@@ -15,8 +14,7 @@ repos; the commits after it on `develop` only add this file and the OpenCode set
 ## 0. Night mode (in force from 2026-09-27 until the owner says otherwise)
 
 The owner is away. Work through the plan (§10) on your own, all night, and never ask a question: nobody
-will answer before morning. Everything stays on local `bunny/*` branches, which the owner reviews
-tomorrow. A watchdog sends you "continue" whenever your session goes idle.
+will answer before morning. Tasks use local `bunny/*` branches by default; the owner's standing authorization permits the lead to commit and push requested root-repo changes directly to `develop` without a per-task push prompt. A watchdog sends you "continue" whenever your session goes idle.
 
 **Instead of stopping:**
 
@@ -27,7 +25,7 @@ tomorrow. A watchdog sends you "continue" whenever your session goes idle.
 | stop and ask, BLOCKED (§8.2)              | Put the BLOCKED note in the task's report and mark the task `blocked`.                                                                               |
 | the oracle does not do what the line asks | Mark it `deferred: not in the oracle`, with the oracle files you checked.                                                                            |
 | a new dependency seems needed             | Mark it `deferred: needs <package>`.                                                                                                                 |
-| push, preview stack (§7.4, §7.5)          | Neither, tonight: `git push`, `make up`, `make down` and `make dev` are denied. The morning report gives the owner the preview command.              |
+| push, preview stack (§7.4, §7.5)          | The lead may push validated root-repo changes to `develop` under the standing owner authorization. Main/engine pushes and preview-stack commands remain restricted. |
 
 After any of these, take the next task.
 
@@ -101,10 +99,7 @@ cd /home/dlesieur/Documents/drawnosaurus
    The owner is away and reviews everything in the morning. Wherever this file says "stop", "ask" or
    "wait", §0 says what to do instead. (By day the owner may switch night mode off; then you stop after
    every batch with the §8.1 report.)
-2. **Your own branches only.** You work in your own clone (§4), on branches named `bunny/<task>`. You
-   never commit to, merge into, rebase or push `develop` or `main`, in either repository. You never
-   push anything at all (the OpenCode config denies `git push`). Finished work collects on your own
-   `bunny/night` branch (§0). Releasing is the owner's job, not yours.
+2. **Branch and publishing scope.** Builders and other agents work on their own `bunny/<task>` branches and never push. The lead has standing owner authorization to commit and push requested changes directly to the root Hydrawn `develop` branch, without a separate per-task “push” message, after the required checks. This does not cover the engine repository, `main`, force pushes, deployments, or merging unrelated PRs. The owner controls those.
 3. **The engine owns the render data (§2).** Every scene computation — geometry, layout, hit testing,
    snapping, bindings, what is painted and where, camera maths, import and export of scene formats —
    lives in the Rust engine. The web app only shows what the engine returns and forwards what the user
@@ -431,13 +426,8 @@ RETURN: <what to hand back: commits + SHAs / findings with file:line / logs with
     - screenshots of the new behaviour (§7.3);
     - for UI tasks, the compat-tester's side-by-side notes against the oracle;
     - a preview stack on the slot's ports (§7.4).
-12. **Report and stop** (§8.1). Record the task in `~/bunny/PROGRESS.md` (§9).
-13. **After the owner's verdict:**
-    - `APPROVE`: push only if the owner wrote "push" (§7.5). Stop the preview (`make down`). Keep the
-      worktree until the owner says released, then clean up (§4.3).
-    - `CHANGES`: go back to step 6 with the owner's notes, then 9–12 again.
-    - `REJECT`: leave the branches as they are, mark the task rejected in PROGRESS.md, clean up when the
-      owner says so.
+12. **Report results.** Record validation, commit, and publication status in `~/bunny/PROGRESS.md` (§9).
+13. **Publish after the required gates.** The lead pushes the validated root Hydrawn commit directly to `develop` under the standing owner authorization; no per-task “push” prompt is needed. Fetch afterward and verify local `HEAD == origin/develop` with a clean tree. Do not push `main` or the engine, force push, deploy, or merge a PR without a separate instruction.
 
 **Commits:** conventional, lowercase, with a scope, saying what changed for the user. Examples from
 this repo: `fix(present): a copied frame starts off the presentation path`,
@@ -513,15 +503,22 @@ make stale        # must print "current"
 - The preview has its own empty database, and the owner opens `http://127.0.0.1:6<k>73`.
 - Stop it with `make down` in the same worktree, never elsewhere.
 
-### 7.5 Pushing (only after the owner wrote "push" for that task)
+### 7.5 Publishing to Hydrawn `develop`
+
+The owner has granted standing authorization for the lead to commit and push requested root-repository work directly to `develop`; no separate “push” message is required for each task.
+
+Before editing, confirm the checkout is clean, fetch `origin`, and fast-forward `develop`. After the change, run the relevant gates, commit with the repository's conventional message, and use a normal push:
 
 ```sh
-git -C $W/engine push git@github.com:Univers42/draw-engine.git bunny/<task>:refs/heads/bunny/<task>   # engine first
-git -C $W push origin bunny/<task>
+git fetch --no-recurse-submodules origin
+git status --short --branch
+git push origin develop
+git fetch --no-recurse-submodules origin
+git rev-parse HEAD
+git rev-parse origin/develop
 ```
 
-Then give the owner the two branch names and SHAs. Pushing `develop` or `main` is never your job.
-
+Close only after `HEAD` equals `origin/develop` and the worktree is clean. Do not force push or bypass branch protection. This standing authorization is specific to the root Hydrawn `develop`; `main`, the engine repository, deployments, and PR merges remain outside it.
 ---
 
 ## 8. Templates
@@ -544,10 +541,10 @@ Try it: http://127.0.0.1:6<k>73 → <3 steps to see the change>
 Limits / skipped (honest): <what is not done, and why>
 New dependencies: none | <name@version — why, needs your approval>
 Checklist lines closed: prompt/<file>.md:<N>, …
-VERDICT NEEDED: APPROVE / CHANGES / REJECT (and "push" if you want the branches on GitHub)
+PUBLISH: root Hydrawn `develop` is pre-authorized after gates; `main` and engine remain restricted.
 ```
 
-Then write: **"Stopped. Waiting for your verdict on <task ids>."** and do nothing else.
+Then report the commit, gates, and verified remote state. Ask only for decisions or manual QA that need the owner.
 
 ### 8.2 Blocked or unsure (stop, ≤5 lines)
 

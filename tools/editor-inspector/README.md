@@ -17,19 +17,16 @@ at `vite dev` rather than at a container image.
 
 Registered in the repo's `.mcp.json`, so Claude Code starts it automatically.
 
-It needs the dev server:
+It needs the web dev server. Do not use `make dev` from a shared or owner checkout: that target
+removes the container named `drawnosaurus-api`. Start Vite in the task's isolated checkout using
+the named, slot-specific container command in `BUNNY.md` §0, then point `open_board` at that port.
+The inspector stubs the API and websocket, so it does not need the API container.
 
-```sh
-make dev            # web on :5373
-```
+The Playwright browser must be installed in a cache available to the inspector process. The checked-in
+`.mcp.json` currently contains a lab-specific `/sgoinfre/...` path; on another machine, set the local
+MCP environment to that machine's browser cache rather than copying the lab path.
 
-and a browser:
-
-```sh
-export PLAYWRIGHT_BROWSERS_PATH=/sgoinfre/students/$USER/.cache/ms-playwright
-```
-
-Browsers do not fit in `$HOME` on these machines — see CLAUDE.md.
+See `BUNNY.md` §0 and `CLAUDE.md` for the isolated-preview rules.
 
 ## Tools
 

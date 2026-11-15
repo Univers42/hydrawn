@@ -203,7 +203,7 @@ Align measures unrotated boxes, where the oracle measures a rotated element by t
 round what it covers — older than this work, and shared with every other `scene_bounds`
 caller.
 
-## Mental model (§4 of `prompts.md`)
+## Mental model of group editing
 
 - **State** — `group_ids` on each element (the document); `editing_group_id` on the engine
   (the session). The first is serialized, the second is not: which group you have stepped
